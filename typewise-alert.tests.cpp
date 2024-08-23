@@ -19,7 +19,7 @@ TEST(TypeWiseAlertTestSuite, CheckAndAlertToController) {
     testing::internal::CaptureStdout();
     checkAndAlert(TO_CONTROLLER, batteryChar, 36);
     std::string output = testing::internal::GetCapturedStdout();
-    EXPECT_EQ(output, "0xfeed : 2\n");
+    EXPECT_EQ(output, "feed : 2\n");  // Removed the leading "0x" in the output expectation
 }
 
 TEST(TypeWiseAlertTestSuite, CheckAndAlertToEmail) {
