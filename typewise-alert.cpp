@@ -1,61 +1,36 @@
-#include "typewise-alert.h"
+#include "battery-alert-system.h"
 #include <iostream>
 
-AlertType evaluateBreach(double temperature, double lowerLimit, double upperLimit) {
-    if (temperature < lowerLimit) {
-        return TOO_LOW;
-    }
-    if (temperature > upperLimit) {
-        return TOO_HIGH;
-    }
-    return NORMAL;
+BatteryAlertSystem::BreachType BatteryAlertSystem::inferBreach(double temperature, double lowerLimit, double upperLimit) {
+    if (temperature < lowerLimit) return BreachType::TOO_LOW;
+    if (temperature > upperLimit) return BreachType::TOO_HIGH;
+    return BreachType::NORMAL;
 }
 
-double getLowerLimit(CoolingMode mode) {
-    return 0; // All modes have the same lower limit
-}
-
-double getUpperLimit(CoolingMode mode) {
-    switch (mode) {
-        case PASSIVE:
-            return 35;
-        case HIGH_ACTIVE:
-            return 45;
-        case MEDIUM_ACTIVE:
-            return 40;
+BatteryAlertSystem::BreachType BatteryAlertSystem::classifyTemperatureBreach(CoolingType coolingType, double temperature) {
+    switch (coolingType) {
+        case CoolingType::PASSIVE_COOLING:
+            return inferBreach(temperature, 0, 35);
+        case CoolingType::MED_ACTIVE_COOLING:
+            return inferBreach(temperature, 0, 40);
+        case CoolingType::HI_ACTIVE_COOLING:
+            return inferBreach(temperature, 0, 45);
         default:
-            return 0; // Default case for safety
+            return BreachType::NORMAL;
     }
 }
 
-AlertType categorizeTemperature(CoolingMode mode, double temperature) {
-    double lowerLimit = getLowerLimit(mode);
-    double upperLimit = getUpperLimit(mode);
-    return evaluateBreach(temperature, lowerLimit, upperLimit);
-}
-
-void triggerAlert(NotificationTarget target, BatteryInfo batteryInfo, double temperature) {
-    AlertType alert = categorizeTemperature(batteryInfo.mode, temperature);
-    if (target == CONTROLLER) {
-        notifyController(alert);
-    } else if (target == EMAIL) {
-        notifyEmail(alert);
-    }
-}
-
-void notifyController(AlertType alert) {
-    const unsigned short header = 0xfeed;
-    std::cout << std::hex << header << " : " << alert << std::endl;
-}
-
-void notifyEmail(AlertType alert) {
-    const std::string recipient = "a.b@c.com";
-    std::cout << "To: " << recipient << std::endl;
-    if (alert == TOO_LOW) {
-        std::cout << "Hi, the temperature is too low" << std::endl;
-    } else if (alert == TOO_HIGH) {
-        std::cout << "Hi, the temperature is too high" << std::endl;
-    } else {
-        std::cout << "Hi, the temperature is normal" << std::endl;
+void BatteryAlertSystem::checkAndAlert(AlertTarget alertTarget, const BatteryCharacter& batteryChar, double temperature) {
+    BreachType breachType = classifyTemperatureBreach(batteryChar.coolingType, temperature);
+    
+    switch (alertTarget) {
+        case AlertTarget::TO_CONTROLLER:
+            std::cout << "feed : " << static_cast<int>(breachType) << "\n";
+            break;
+        case AlertTarget::TO_EMAIL:
+            if (breachType == BreachType::TOO_HIGH) {
+                std::cout << "To: a.b@c.com\nHi, the temperature is too high\n";
+            }
+            break;
     }
 }
