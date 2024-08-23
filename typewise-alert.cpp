@@ -1,51 +1,61 @@
 #include "typewise-alert.h"
-#include <stdio.h>
+#include <iostream>
 
-BreachType inferBreach(double temperature, double lowerThreshold, double upperThreshold) {
-    if (temperature < lowerThreshold) {
+AlertType evaluateBreach(double temperature, double lowerLimit, double upperLimit) {
+    if (temperature < lowerLimit) {
         return TOO_LOW;
     }
-    if (temperature > upperThreshold) {
+    if (temperature > upperLimit) {
         return TOO_HIGH;
     }
     return NORMAL;
 }
 
-BreachType classifyTemperatureBreach(CoolingType coolingType, double temperature) {
-    double upperThreshold = 0;
-    
-    if (coolingType == PASSIVE_COOLING) {
-        upperThreshold = 35;
-    } else if (coolingType == MED_ACTIVE_COOLING) {
-        upperThreshold = 40;
-    } else if (coolingType == HI_ACTIVE_COOLING) {
-        upperThreshold = 45;
-    }
-
-    return inferBreach(temperature, 0, upperThreshold);
+double getLowerLimit(CoolingMode mode) {
+    return 0; // All modes have the same lower limit
 }
 
-void checkAndAlert(AlertTarget alertTarget, BatteryCharacter batteryChar, double temperature) {
-    BreachType breachType = classifyTemperatureBreach(batteryChar.coolingType, temperature);
-
-    if (alertTarget == TO_CONTROLLER) {
-        sendToController(breachType);
-    } else if (alertTarget == TO_EMAIL) {
-        sendToEmail(breachType);
+double getUpperLimit(CoolingMode mode) {
+    switch (mode) {
+        case PASSIVE:
+            return 35;
+        case HIGH_ACTIVE:
+            return 45;
+        case MEDIUM_ACTIVE:
+            return 40;
+        default:
+            return 0; // Default case for safety
     }
 }
 
-void sendToController(BreachType breachType) {
-    printf("0xfeed : %d\n", breachType);
+AlertType categorizeTemperature(CoolingMode mode, double temperature) {
+    double lowerLimit = getLowerLimit(mode);
+    double upperLimit = getUpperLimit(mode);
+    return evaluateBreach(temperature, lowerLimit, upperLimit);
 }
 
-void sendToEmail(BreachType breachType) {
-    const char* recipient = "a.b@c.com";
-    if (breachType == TOO_LOW) {
-        printf("To: %s\nHi, the temperature is too low\n", recipient);
-    } else if (breachType == TOO_HIGH) {
-        printf("To: %s\nHi, the temperature is too high\n", recipient);
+void triggerAlert(NotificationTarget target, BatteryInfo batteryInfo, double temperature) {
+    AlertType alert = categorizeTemperature(batteryInfo.mode, temperature);
+    if (target == CONTROLLER) {
+        notifyController(alert);
+    } else if (target == EMAIL) {
+        notifyEmail(alert);
+    }
+}
+
+void notifyController(AlertType alert) {
+    const unsigned short header = 0xfeed;
+    std::cout << std::hex << header << " : " << alert << std::endl;
+}
+
+void notifyEmail(AlertType alert) {
+    const std::string recipient = "a.b@c.com";
+    std::cout << "To: " << recipient << std::endl;
+    if (alert == TOO_LOW) {
+        std::cout << "Hi, the temperature is too low" << std::endl;
+    } else if (alert == TOO_HIGH) {
+        std::cout << "Hi, the temperature is too high" << std::endl;
     } else {
-        printf("To: %s\nHi, the temperature is normal\n", recipient);
+        std::cout << "Hi, the temperature is normal" << std::endl;
     }
 }
