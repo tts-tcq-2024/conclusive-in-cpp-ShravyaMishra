@@ -20,7 +20,6 @@ typedef enum {
 
 typedef struct {
     CoolingType coolingType;
-    char brand[48];
 } BatteryCharacter;
 
 BreachType inferBreach(double value, double lowerLimit, double upperLimit);
