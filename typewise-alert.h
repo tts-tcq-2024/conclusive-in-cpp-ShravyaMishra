@@ -1,38 +1,35 @@
-#ifndef TYPEWISE_ALERT_H
-#define TYPEWISE_ALERT_H
+#ifndef BATTERY_ALERT_SYSTEM_H
+#define BATTERY_ALERT_SYSTEM_H
 
 #include <string>
 
-enum CoolingMode {
-    PASSIVE,
-    HIGH_ACTIVE,
-    MEDIUM_ACTIVE
+class BatteryAlertSystem {
+public:
+    enum class CoolingType {
+        PASSIVE_COOLING,
+        MED_ACTIVE_COOLING,
+        HI_ACTIVE_COOLING
+    };
+
+    enum class AlertTarget {
+        TO_CONTROLLER,
+        TO_EMAIL
+    };
+
+    enum class BreachType {
+        NORMAL,
+        TOO_LOW,
+        TOO_HIGH
+    };
+
+    struct BatteryCharacter {
+        CoolingType coolingType;
+        std::string brand;
+    };
+
+    static BreachType inferBreach(double temperature, double lowerLimit, double upperLimit);
+    static BreachType classifyTemperatureBreach(CoolingType coolingType, double temperature);
+    static void checkAndAlert(AlertTarget alertTarget, const BatteryCharacter& batteryChar, double temperature);
 };
 
-enum AlertType {
-    NORMAL,
-    TOO_LOW,
-    TOO_HIGH
-};
-
-enum NotificationTarget {
-    CONTROLLER,
-    EMAIL
-};
-
-struct BatteryInfo {
-    CoolingMode mode;
-    std::string brand;
-};
-
-AlertType evaluateBreach(double temperature, double lowerLimit, double upperLimit);
-
-AlertType categorizeTemperature(CoolingMode mode, double temperature);
-
-void triggerAlert(NotificationTarget target, BatteryInfo batteryInfo, double temperature);
-
-void notifyController(AlertType alert);
-
-void notifyEmail(AlertType alert);
-
-#endif
+#endif // BATTERY_ALERT_SYSTEM_H
