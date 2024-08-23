@@ -28,6 +28,12 @@ TEST(TypeWiseAlertTestSuite, CheckAndAlertToEmail) {
     checkAndAlert(TO_EMAIL, batteryChar, 36);
     std::string output = testing::internal::GetCapturedStdout();
     EXPECT_EQ(output, "To: a.b@c.com\nHi, the temperature is too high\n");
+
+    // Testing for normal temperature
+    testing::internal::CaptureStdout();
+    checkAndAlert(TO_EMAIL, batteryChar, 34);
+    output = testing::internal::GetCapturedStdout();
+    EXPECT_EQ(output, "To: a.b@c.com\nHi, the temperature is normal\n");
 }
 
 int main(int argc, char **argv) {
