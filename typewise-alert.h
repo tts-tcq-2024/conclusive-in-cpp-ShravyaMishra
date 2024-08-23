@@ -23,8 +23,8 @@ typedef struct {
 } BatteryCharacter;
 
 BreachType inferBreach(double value, double lowerLimit, double upperLimit);
-BreachType classifyTemperatureBreach(CoolingType coolingType, double temperatureInC);
-void checkAndAlert(AlertTarget alertTarget, BatteryCharacter batteryChar, double temperatureInC);
+BreachType classifyTemperatureBreach(CoolingType coolingType, double temperature);
+void checkAndAlert(AlertTarget alertTarget, BatteryCharacter batteryChar, double temperature);
 void sendToController(BreachType breachType);
 void sendToEmail(BreachType breachType);
 
