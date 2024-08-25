@@ -1,7 +1,6 @@
 #include "typewise-alert.h"
 #include <stdio.h>
 
-// Initialize the static array of CoolingParameters inside the class
 const TypewiseAlert::CoolingParameters* TypewiseAlert::getCoolingParameters() {
     static const CoolingParameters coolingParams[] = {
         {CoolingType::PASSIVE_COOLING, 0, 35},
@@ -18,8 +17,8 @@ TypewiseAlert::CoolingParameters TypewiseAlert::getParamsForCoolingType(CoolingT
             return params[i];
         }
     }
-    // Default case: return 0, 0 limits if cooling type is unknown
-    return {coolingType, 0, 0};
+    // Default to the first cooling type if not found (can adjust as needed)
+    return params[0];
 }
 
 TypewiseAlert::BreachType TypewiseAlert::evaluateBreach(double temperature, double lowerLimit, double upperLimit) {
