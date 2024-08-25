@@ -1,55 +1,79 @@
 #include "typewise-alert.h"
 #include <stdio.h>
 
-// Function to infer if temperature is too low, too high, or normal
-BreachType inferBreach(float temperatureInCelsius, float lowerLimit, float upperLimit) {
-    if (temperatureInCelsius < lowerLimit) {
-        return TOO_LOW;
-    } else if (temperatureInCelsius > upperLimit) {
-        return TOO_HIGH;
-    } else {
-        return NORMAL;
+BreachType PassiveCooling::inferBreach(double value) const
+{
+    if (value < 0.0) 
+    {
+        return BreachType::TOO_LOW;
+    }
+    else if (value > 35.0) 
+    {
+        return BreachType::TOO_HIGH;
+    }
+    return BreachType::NORMAL; 
+}
+
+BreachType HiActiveCooling::inferBreach(double value) const
+{
+    if (value < 0.0) 
+    {
+        return BreachType::TOO_LOW;
+    }
+    else if (value > 45.0) 
+    {
+        return BreachType::TOO_HIGH;
+    }
+    return BreachType::NORMAL; 
+}
+
+BreachType MedActiveCooling::inferBreach(double value) const
+{
+    if (value < 0.0) 
+    {
+        return BreachType::TOO_LOW;
+    }
+    else if (value > 40.0) 
+    {
+        return BreachType::TOO_HIGH;
+    }
+    return BreachType::NORMAL; 
+}
+
+CoolingContext::CoolingContext(std::unique_ptr<CoolingStrategy> strategy) : strategy(std::move(strategy))
+{
+}
+  
+BreachType CoolingContext::inferBreach(double value) const
+{
+  return strategy->inferBreach(value);
+}
+
+void ControllerAlert::report(const BreachType breachType)
+{
+    const unsigned short header = 0xfeed;
+    std::cout << std::hex << header << " : " << static_cast<std::uint16_t>(breachType) << std::endl;
+}
+
+void EmailAlert::report(const BreachType breachType)
+{
+    if(breachType != BreachType::NORMAL)
+    {
+        const std::string recepient = "a.b@c.com";
+        auto it = breachMessages.find(breachType);
+        if(it != breachMessages.end())
+        {
+            std::cout << "To: " << recepient << std::endl;
+            std::cout << "Hi, " << it->second << std::endl; 
+        }
     }
 }
 
-// Function to classify temperature breach based on cooling type
-BreachType classifyTemperatureBreach(CoolingType coolingType, float temperatureInCelsius) {
-    float lowerLimit, upperLimit;
-
-    switch (coolingType) {
-        case PASSIVE_COOLING:
-            lowerLimit = 0;
-            upperLimit = 35;
-            break;
-        case MED_ACTIVE_COOLING:
-            lowerLimit = 0;
-            upperLimit = 40;
-            break;
-        case HI_ACTIVE_COOLING:
-            lowerLimit = 0;
-            upperLimit = 45;
-            break;
-        default:
-            return NORMAL; // Default case if cooling type is unknown
-    }
-
-    return inferBreach(temperatureInCelsius, lowerLimit, upperLimit);
+Alerter::Alerter(std::unique_ptr<AlertStrategy> strategy) : strategy(std::move(strategy))
+{
 }
-
-// Function to send alert based on the breach type and target
-void checkAndAlert(AlertTarget alertTarget, BatteryCharacter batteryChar, float temperatureInCelsius) {
-    BreachType breachType = classifyTemperatureBreach(batteryChar.coolingType, temperatureInCelsius);
-
-    switch (alertTarget) {
-        case TO_CONTROLLER:
-            // Send alert to controller (for now, just print to stdout)
-            printf("Alert to controller: BreachType %d\n", breachType);
-            break;
-        case TO_EMAIL:
-            // Send alert via email (for now, just print to stdout)
-            printf("Alert via email: BreachType %d\n", breachType);
-            break;
-        default:
-            break; // Handle unknown alert targets
-    }
+  
+void Alerter::report(const BreachType breachType)
+{
+  strategy->report(breachType);
 }
