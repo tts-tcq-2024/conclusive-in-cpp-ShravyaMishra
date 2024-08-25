@@ -18,23 +18,23 @@ TypewiseAlert::CoolingParameters TypewiseAlert::getParamsForCoolingType(CoolingT
             return params[i];
         }
     }
-    // Default case: return 0, 0 limits if cooling type is unknown
-    return {coolingType, 0, 0};
+    // Default case: return a default CoolingParameters structure
+    return {CoolingType::PASSIVE_COOLING, 0, 35};  // Adjust the default values as needed
 }
 
-TypewiseAlert::BreachType TypewiseAlert::evaluateBreach(double temperature, double lowerLimit, double upperLimit) {
-    if (temperature < lowerLimit) {
+TypewiseAlert::BreachType TypewiseAlert::inferBreach(double value, double lowerLimit, double upperLimit) {
+    if (value < lowerLimit) {
         return BreachType::TOO_LOW;
     }
-    if (temperature > upperLimit) {
+    if (value > upperLimit) {
         return BreachType::TOO_HIGH;
     }
     return BreachType::NORMAL;
 }
 
-TypewiseAlert::BreachType TypewiseAlert::classifyTemperature(double temperatureInC, CoolingType coolingType) {
+TypewiseAlert::BreachType TypewiseAlert::classifyTemperatureBreach(CoolingType coolingType, double temperatureInC) {
     CoolingParameters params = getParamsForCoolingType(coolingType);
-    return evaluateBreach(temperatureInC, params.lowerLimit, params.upperLimit);
+    return inferBreach(temperatureInC, params.lowerLimit, params.upperLimit);
 }
 
 void TypewiseAlert::sendToController(BreachType breachType) {
@@ -50,8 +50,8 @@ void TypewiseAlert::sendToEmail(BreachType breachType) {
     }
 }
 
-void TypewiseAlert::monitorAndAlert(AlertTarget alertTarget, const BatteryCharacter& batteryChar, double temperatureInC) {
-    BreachType breachType = classifyTemperature(temperatureInC, batteryChar.coolingType);
+void TypewiseAlert::checkAndAlert(AlertTarget alertTarget, const BatteryCharacter& batteryChar, double temperatureInC) {
+    BreachType breachType = classifyTemperatureBreach(batteryChar.coolingType, temperatureInC);
     if (alertTarget == AlertTarget::TO_CONTROLLER) {
         sendToController(breachType);
     } else {
