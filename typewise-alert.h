@@ -1,87 +1,73 @@
-#ifndef TYPEWISE_ALERT_H
-#define TYPEWISE_ALERT_H
-
+#pragma once
 #include <memory>
-#include <unordered_map>
-#include <iostream>
-#include <string>
+#include <map>
+#include "BreachType.h"
 
-// Define enum for breach types
-enum class BreachType {
-    TOO_LOW,
-    TOO_HIGH,
-    NORMAL
-};
-
-// Define enum for cooling types
-enum class CoolingType {
-    PASSIVE_COOLING,
-    MED_ACTIVE_COOLING,
-    HI_ACTIVE_COOLING
-};
-
-// Abstract class for Cooling Strategy
-class CoolingStrategy {
-public:
-    virtual ~CoolingStrategy() = default;
+class CoolingStrategy
+{
+    public:
+    virtual ~CoolingStrategy()= default;
     virtual BreachType inferBreach(double value) const = 0;
 };
 
-// Concrete classes for different cooling strategies
-class PassiveCooling : public CoolingStrategy {
-public:
+class PassiveCooling : public CoolingStrategy
+{
+    public:
     BreachType inferBreach(double value) const override;
 };
 
-class HiActiveCooling : public CoolingStrategy {
-public:
+class HiActiveCooling : public CoolingStrategy
+{
+    public:
     BreachType inferBreach(double value) const override;
 };
 
-class MedActiveCooling : public CoolingStrategy {
-public:
+class MedActiveCooling : public CoolingStrategy
+{
+    public:
     BreachType inferBreach(double value) const override;
 };
 
-// Context class that uses a CoolingStrategy
-class CoolingContext {
-public:
-    CoolingContext(std::unique_ptr<CoolingStrategy> strategy);
-    BreachType inferBreach(double value) const;
-private:
-    std::unique_ptr<CoolingStrategy> strategy;
+class CoolingContext 
+{
+  private:
+  std::unique_ptr<CoolingStrategy> strategy;
+  
+  public:
+  CoolingContext(std::unique_ptr<CoolingStrategy> strategy);
+  BreachType inferBreach(double value) const;  
 };
 
-// Abstract class for Alert Strategy
-class AlertStrategy {
+class AlertStrategy 
+{
 public:
     virtual ~AlertStrategy() = default;
-    virtual void report(BreachType breachType) = 0;
+    virtual void report(const BreachType breachType) = 0;
 };
 
-// Concrete classes for different alert strategies
-class ControllerAlert : public AlertStrategy {
+class ControllerAlert : public AlertStrategy 
+{
 public:
-    void report(BreachType breachType) override;
+    void report(const BreachType breachType) override;
 };
 
-class EmailAlert : public AlertStrategy {
+class EmailAlert : public AlertStrategy 
+{
 public:
-    void report(BreachType breachType) override;
+    void report(const BreachType breachType) override;
 private:
-    const std::unordered_map<BreachType, std::string> breachMessages = {
-        {BreachType::TOO_LOW, "Temperature is too low"},
-        {BreachType::TOO_HIGH, "Temperature is too high"}
+    const std::map<const BreachType, std::string> breachMessages =
+    {
+        {BreachType::TOO_LOW, "the temperature is too low"},
+        {BreachType::TOO_HIGH, "the temperature is too high"},
     };
 };
 
-// Alerter class that uses an AlertStrategy
-class Alerter {
-public:
-    Alerter(std::unique_ptr<AlertStrategy> strategy);
-    void report(BreachType breachType);
-private:
-    std::unique_ptr<AlertStrategy> strategy;
+class Alerter
+{
+  private:
+      std::unique_ptr<AlertStrategy> strategy;
+  public:
+      Alerter(std::unique_ptr<AlertStrategy> strategy);
+      void report(const BreachType breachType);
 };
-
-#endif // TYPEWISE_ALERT_H
