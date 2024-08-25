@@ -1,79 +1,88 @@
 #include "typewise-alert.h"
-#include <stdio.h>
+#include <iostream>
+#include <unordered_map>
+#include <memory>
+#include <string>
 
-BreachType PassiveCooling::inferBreach(double value) const
+// Implementations for CoolingStrategy
+BreachType PassiveCooling::inferBreach(double temperature) const
 {
-    if (value < 0.0) 
+    if (temperature < 0.0) 
     {
         return BreachType::TOO_LOW;
     }
-    else if (value > 35.0) 
+    else if (temperature > 35.0) 
     {
         return BreachType::TOO_HIGH;
     }
     return BreachType::NORMAL; 
 }
 
-BreachType HiActiveCooling::inferBreach(double value) const
+BreachType HiActiveCooling::inferBreach(double temperature) const
 {
-    if (value < 0.0) 
+    if (temperature < 0.0) 
     {
         return BreachType::TOO_LOW;
     }
-    else if (value > 45.0) 
+    else if (temperature > 45.0) 
     {
         return BreachType::TOO_HIGH;
     }
     return BreachType::NORMAL; 
 }
 
-BreachType MedActiveCooling::inferBreach(double value) const
+BreachType MedActiveCooling::inferBreach(double temperature) const
 {
-    if (value < 0.0) 
+    if (temperature < 0.0) 
     {
         return BreachType::TOO_LOW;
     }
-    else if (value > 40.0) 
+    else if (temperature > 40.0) 
     {
         return BreachType::TOO_HIGH;
     }
     return BreachType::NORMAL; 
 }
 
-CoolingContext::CoolingContext(std::unique_ptr<CoolingStrategy> strategy) : strategy(std::move(strategy))
+// Implementations for CoolingContext
+CoolingContext::CoolingContext(std::unique_ptr<CoolingStrategy> coolingStrategy)
+    : strategy(std::move(coolingStrategy))
 {
 }
   
-BreachType CoolingContext::inferBreach(double value) const
+BreachType CoolingContext::inferBreach(double temperature) const
 {
-  return strategy->inferBreach(value);
+    return strategy->inferBreach(temperature);
 }
 
+// Implementations for AlertStrategy
 void ControllerAlert::report(const BreachType breachType)
 {
-    const unsigned short header = 0xfeed;
-    std::cout << std::hex << header << " : " << static_cast<std::uint16_t>(breachType) << std::endl;
+    const unsigned short alertHeader = 0xfeed;
+    std::cout << std::hex << alertHeader << " : " << static_cast<std::uint16_t>(breachType) << std::endl;
 }
 
 void EmailAlert::report(const BreachType breachType)
 {
-    if(breachType != BreachType::NORMAL)
+    if (breachType != BreachType::NORMAL)
     {
-        const std::string recepient = "a.b@c.com";
-        auto it = breachMessages.find(breachType);
-        if(it != breachMessages.end())
+        const std::string emailRecipient = "a.b@c.com";
+        auto messageIt = breachMessages.find(breachType);
+        if (messageIt != breachMessages.end())
         {
-            std::cout << "To: " << recepient << std::endl;
-            std::cout << "Hi, " << it->second << std::endl; 
+            std::cout << "To: " << emailRecipient << std::endl;
+            std::cout << "Hi, " << messageIt->second << std::endl; 
         }
     }
 }
 
-Alerter::Alerter(std::unique_ptr<AlertStrategy> strategy) : strategy(std::move(strategy))
+// Implementations for Alerter
+Alerter::Alerter(std::unique_ptr<AlertStrategy> alertStrategy)
+    : strategy(std::move(alertStrategy))
 {
 }
   
 void Alerter::report(const BreachType breachType)
 {
-  strategy->report(breachType);
+    strategy->report(breachType);
 }
