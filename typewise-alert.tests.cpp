@@ -1,32 +1,53 @@
 #include "typewise-alert.h"
-#include <cassert>
-#include <cstdio>
+#include <gtest/gtest.h>
 
-// Function to test temperature classification
-void testTemperatureClassification() {
-    assert(TypewiseAlert::classifyTemperature(20, CoolingType::PASSIVE_COOLING) == BreachType::NORMAL);
-    assert(TypewiseAlert::classifyTemperature(50, CoolingType::HI_ACTIVE_COOLING) == BreachType::TOO_HIGH);
-    assert(TypewiseAlert::classifyTemperature(-5, CoolingType::MED_ACTIVE_COOLING) == BreachType::TOO_LOW);
+// Test to check the inferBreach function with different scenarios
+TEST(TypewiseAlertTest, InferBreach) {
+    EXPECT_EQ(TypewiseAlert::evaluateBreach(25, 20, 30), TypewiseAlert::BreachType::NORMAL);
+    EXPECT_EQ(TypewiseAlert::evaluateBreach(15, 20, 30), TypewiseAlert::BreachType::TOO_LOW);
+    EXPECT_EQ(TypewiseAlert::evaluateBreach(35, 20, 30), TypewiseAlert::BreachType::TOO_HIGH);
 }
 
-// Function to test the alert mechanism
-void testTypewiseAlert() {
-    BatteryCharacter batteryChar{CoolingType::MED_ACTIVE_COOLING, "BrandX"};
-
-    // Test alert for temperature that is too high
-    TypewiseAlert::monitorAndAlert(AlertTarget::TO_CONTROLLER, batteryChar, 45);
-    // Since 45 is above the MED_ACTIVE_COOLING limit, it should trigger a TO_CONTROLLER alert.
-
-    // Test alert for temperature within the normal range
-    TypewiseAlert::monitorAndAlert(AlertTarget::TO_EMAIL, batteryChar, 35);
-    // Since 35 is within the MED_ACTIVE_COOLING limit, it should not trigger an alert.
+// Test to verify the classifyTemperatureBreach function for different cooling types
+TEST(TypewiseAlertTest, ClassifyTemperatureBreach) {
+    EXPECT_EQ(TypewiseAlert::classifyTemperature(30, TypewiseAlert::CoolingType::PASSIVE_COOLING), TypewiseAlert::BreachType::NORMAL);
+    EXPECT_EQ(TypewiseAlert::classifyTemperature(40, TypewiseAlert::CoolingType::PASSIVE_COOLING), TypewiseAlert::BreachType::TOO_HIGH);
+    EXPECT_EQ(TypewiseAlert::classifyTemperature(50, TypewiseAlert::CoolingType::HI_ACTIVE_COOLING), TypewiseAlert::BreachType::TOO_HIGH);
+    EXPECT_EQ(TypewiseAlert::classifyTemperature(-5, TypewiseAlert::CoolingType::MED_ACTIVE_COOLING), TypewiseAlert::BreachType::TOO_LOW);
 }
 
-int main() {
-    // Run both tests
-    testTemperatureClassification();
-    testTypewiseAlert();
+// Mocking a test for sending alerts to the controller
+TEST(TypewiseAlertTest, CheckAndAlertToController) {
+    // Redirect stdout to a stringstream to check output
+    testing::internal::CaptureStdout();
+    
+    TypewiseAlert::BatteryCharacter batteryChar = { TypewiseAlert::CoolingType::PASSIVE_COOLING, "BrandA" };
+    TypewiseAlert::monitorAndAlert(TypewiseAlert::AlertTarget::TO_CONTROLLER, batteryChar, 50);
+    
+    std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_EQ(output, "feed : 2\n");  // TOO_HIGH is expected to be 2
+}
 
-    printf("All tests passed!\n");
-    return 0;
+// Mocking a test for sending alerts to email
+TEST(TypewiseAlertTest, CheckAndAlertToEmail) {
+    // Redirect stdout to a stringstream to check output
+    testing::internal::CaptureStdout();
+    
+    TypewiseAlert::BatteryCharacter batteryChar = { TypewiseAlert::CoolingType::PASSIVE_COOLING, "BrandA" };
+    TypewiseAlert::monitorAndAlert(TypewiseAlert::AlertTarget::TO_EMAIL, batteryChar, 50);
+    
+    std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_EQ(output, "To: a.b@c.com\nHi, the temperature is too high\n");
+}
+
+// Test to ensure normal temperatures do not trigger alerts
+TEST(TypewiseAlertTest, NoAlertForNormalTemperature) {
+    // Redirect stdout to a stringstream to check output
+    testing::internal::CaptureStdout();
+    
+    TypewiseAlert::BatteryCharacter batteryChar = { TypewiseAlert::CoolingType::HI_ACTIVE_COOLING, "BrandB" };
+    TypewiseAlert::monitorAndAlert(TypewiseAlert::AlertTarget::TO_EMAIL, batteryChar, 40);
+    
+    std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_EQ(output, "");  // Expect no output since temperature is normal
 }
