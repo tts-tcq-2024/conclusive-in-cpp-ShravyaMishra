@@ -1,4 +1,6 @@
-#pragma once
+#ifndef TYPEWISE_ALERT_H
+#define TYPEWISE_ALERT_H
+
 #include <string>
 
 class TypewiseAlert {
@@ -25,9 +27,9 @@ public:
         std::string brand;
     };
 
-    static BreachType classifyTemperatureBreach(CoolingType coolingType, double temperatureInC);
+    static BreachType assessTemperatureBreach(CoolingType coolingType, double temperatureInC);
     static void checkAndAlert(AlertTarget alertTarget, const BatteryCharacter& batteryChar, double temperatureInC);
-    static BreachType inferBreach(double value, double lowerLimit, double upperLimit);
+    static BreachType evaluateBreach(double value, double lowerLimit, double upperLimit);
 
 private:
     struct CoolingLimits {
@@ -35,11 +37,11 @@ private:
         int lowerLimit;
         int upperLimit;
     };
-    
-    static CoolingLimits getLimitsForCoolingType(CoolingType coolingType);
-    static void sendToController(BreachType breachType);
-    static void sendToEmail(BreachType breachType);
 
-    // Static method to initialize the cooling limits
-    static const CoolingLimits* getCoolingLimits();
+    static CoolingLimits findLimitsForCoolingType(CoolingType coolingType);
+    static const CoolingLimits* retrieveCoolingLimits();
+    static void alertController(BreachType breachType);
+    static void alertEmail(BreachType breachType);
 };
+
+#endif // TYPEWISE_ALERT_H
