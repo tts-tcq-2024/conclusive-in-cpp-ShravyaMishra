@@ -1,66 +1,55 @@
 #include "typewise-alert.h"
 #include <stdio.h>
 
-// Static method to initialize the cooling limits
-const TypewiseAlert::CoolingLimits* TypewiseAlert::getCoolingLimits() {
-    static const CoolingLimits coolingLimits[] = {
-        {CoolingType::PASSIVE_COOLING, 0, 35},
-        {CoolingType::HI_ACTIVE_COOLING, 0, 45},
-        {CoolingType::MED_ACTIVE_COOLING, 0, 40},
-    };
-    return coolingLimits;
-}
-
-// Get the limits for the specific CoolingType
-TypewiseAlert::CoolingLimits TypewiseAlert::getLimitsForCoolingType(CoolingType coolingType) {
-    const CoolingLimits* limits = getCoolingLimits();
-    for (int i = 0; i < 3; ++i) {
-        if (limits[i].coolingType == coolingType) {
-            return limits[i];
-        }
-    }
-    // Default to PASSIVE_COOLING limits if the type is not found
-    return {CoolingType::PASSIVE_COOLING, 0, 35};  // Adjust as necessary
-}
-
-// Function to infer the breach type based on temperature and limits
-TypewiseAlert::BreachType TypewiseAlert::inferBreach(double value, double lowerLimit, double upperLimit) {
-    if (value < lowerLimit) {
-        return BreachType::TOO_LOW;
-    }
-    if (value > upperLimit) {
-        return BreachType::TOO_HIGH;
-    }
-    return BreachType::NORMAL;
-}
-
-// Classify the temperature breach based on cooling type and temperature
-TypewiseAlert::BreachType TypewiseAlert::classifyTemperatureBreach(CoolingType coolingType, double temperatureInC) {
-    CoolingLimits limits = getLimitsForCoolingType(coolingType);
-    return inferBreach(temperatureInC, limits.lowerLimit, limits.upperLimit);
-}
-
-// Send breach type to the controller
-void TypewiseAlert::sendToController(BreachType breachType) {
-    const unsigned short header = 0xfeed;
-    printf("%x : %x\n", header, static_cast<int>(breachType));
-}
-
-// Send breach type to email
-void TypewiseAlert::sendToEmail(BreachType breachType) {
-    const char* recipient = "a.b@c.com";
-    if (breachType != BreachType::NORMAL) {
-        printf("To: %s\n", recipient);
-        printf("Hi, the temperature is %s\n", breachType == BreachType::TOO_LOW ? "too low" : "too high");
-    }
-}
-
-// Check and alert based on breach type and target
-void TypewiseAlert::checkAndAlert(AlertTarget alertTarget, const BatteryCharacter& batteryChar, double temperatureInC) {
-    BreachType breachType = classifyTemperatureBreach(batteryChar.coolingType, temperatureInC);
-    if (alertTarget == AlertTarget::TO_CONTROLLER) {
-        sendToController(breachType);
+// Function to infer if temperature is too low, too high, or normal
+BreachType inferBreach(float temperatureInCelsius, float lowerLimit, float upperLimit) {
+    if (temperatureInCelsius < lowerLimit) {
+        return TOO_LOW;
+    } else if (temperatureInCelsius > upperLimit) {
+        return TOO_HIGH;
     } else {
-        sendToEmail(breachType);
+        return NORMAL;
+    }
+}
+
+// Function to classify temperature breach based on cooling type
+BreachType classifyTemperatureBreach(CoolingType coolingType, float temperatureInCelsius) {
+    float lowerLimit, upperLimit;
+
+    switch (coolingType) {
+        case PASSIVE_COOLING:
+            lowerLimit = 0;
+            upperLimit = 35;
+            break;
+        case MED_ACTIVE_COOLING:
+            lowerLimit = 0;
+            upperLimit = 40;
+            break;
+        case HI_ACTIVE_COOLING:
+            lowerLimit = 0;
+            upperLimit = 45;
+            break;
+        default:
+            return NORMAL; // Default case if cooling type is unknown
+    }
+
+    return inferBreach(temperatureInCelsius, lowerLimit, upperLimit);
+}
+
+// Function to send alert based on the breach type and target
+void checkAndAlert(AlertTarget alertTarget, BatteryCharacter batteryChar, float temperatureInCelsius) {
+    BreachType breachType = classifyTemperatureBreach(batteryChar.coolingType, temperatureInCelsius);
+
+    switch (alertTarget) {
+        case TO_CONTROLLER:
+            // Send alert to controller (for now, just print to stdout)
+            printf("Alert to controller: BreachType %d\n", breachType);
+            break;
+        case TO_EMAIL:
+            // Send alert via email (for now, just print to stdout)
+            printf("Alert via email: BreachType %d\n", breachType);
+            break;
+        default:
+            break; // Handle unknown alert targets
     }
 }
