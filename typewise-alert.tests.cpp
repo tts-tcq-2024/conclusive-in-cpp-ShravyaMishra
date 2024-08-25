@@ -1,62 +1,52 @@
 #include "typewise-alert.h"
+#include <gtest/gtest.h>
+#include <sstream>
 
-// Implementations for CoolingStrategy
-BreachType PassiveCooling::inferBreach(double value) const {
-    if (value < 0.0) {
-        return BreachType::TOO_LOW;
-    } else if (value > 35.0) {
-        return BreachType::TOO_HIGH;
+// Helper class to capture output for testing
+class OutputCapture {
+public:
+    OutputCapture() {
+        originalBuffer = std::cout.rdbuf();
+        std::cout.rdbuf(buffer.rdbuf());
     }
-    return BreachType::NORMAL;
-}
 
-BreachType HiActiveCooling::inferBreach(double value) const {
-    if (value < 0.0) {
-        return BreachType::TOO_LOW;
-    } else if (value > 45.0) {
-        return BreachType::TOO_HIGH;
+    ~OutputCapture() {
+        std::cout.rdbuf(originalBuffer);
     }
-    return BreachType::NORMAL;
-}
 
-BreachType MedActiveCooling::inferBreach(double value) const {
-    if (value < 0.0) {
-        return BreachType::TOO_LOW;
-    } else if (value > 40.0) {
-        return BreachType::TOO_HIGH;
+    std::string getCapturedOutput() {
+        return buffer.str();
     }
-    return BreachType::NORMAL;
+
+private:
+    std::streambuf* originalBuffer;
+    std::stringstream buffer;
+};
+
+// Tests for CoolingContext and CoolingStrategy
+TEST(CoolingContextTest, PassiveCoolingTest) {
+    CoolingContext context(std::make_unique<PassiveCooling>());
+    EXPECT_EQ(context.inferBreach(20.0), BreachType::NORMAL);
+    EXPECT_EQ(context.inferBreach(36.0), BreachType::TOO_HIGH);
+    EXPECT_EQ(context.inferBreach(-1.0), BreachType::TOO_LOW);
 }
 
-// Implementations for CoolingContext
-CoolingContext::CoolingContext(std::unique_ptr<CoolingStrategy> strategy)
-    : strategy(std::move(strategy)) {}
-
-BreachType CoolingContext::inferBreach(double value) const {
-    return strategy->inferBreach(value);
+TEST(CoolingContextTest, HiActiveCoolingTest) {
+    CoolingContext context(std::make_unique<HiActiveCooling>());
+    EXPECT_EQ(context.inferBreach(20.0), BreachType::NORMAL);
+    EXPECT_EQ(context.inferBreach(46.0), BreachType::TOO_HIGH);
+    EXPECT_EQ(context.inferBreach(-1.0), BreachType::TOO_LOW);
 }
 
-// Implementations for AlertStrategy
-void ControllerAlert::report(BreachType breachType) {
-    const unsigned short header = 0xfeed;
-    std::cout << std::hex << header << " : " << static_cast<std::uint16_t>(breachType) << std::endl;
+TEST(CoolingContextTest, MedActiveCoolingTest) {
+    CoolingContext context(std::make_unique<MedActiveCooling>());
+    EXPECT_EQ(context.inferBreach(20.0), BreachType::NORMAL);
+    EXPECT_EQ(context.inferBreach(41.0), BreachType::TOO_HIGH);
+    EXPECT_EQ(context.inferBreach(-1.0), BreachType::TOO_LOW);
 }
 
-void EmailAlert::report(BreachType breachType) {
-    if (breachType != BreachType::NORMAL) {
-        const std::string recepient = "a.b@c.com";
-        auto it = breachMessages.find(breachType);
-        if (it != breachMessages.end()) {
-            std::cout << "To: " << recepient << std::endl;
-            std::cout << "Hi, " << it->second << std::endl;
-        }
-    }
-}
-
-// Implementations for Alerter
-Alerter::Alerter(std::unique_ptr<AlertStrategy> strategy)
-    : strategy(std::move(strategy)) {}
-
-void Alerter::report(BreachType breachType) {
-    strategy->report(breachType);
-}
+// Tests for ControllerAlert
+TEST(AlertTest, ControllerAlertTest) {
+    OutputCapture capture;
+    ControllerAlert alert;
+    alert.report(BreachType::TOO_
