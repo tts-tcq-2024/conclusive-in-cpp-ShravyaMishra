@@ -5,37 +5,37 @@
 
 class CoolingStrategy
 {
-    public:
-    virtual ~CoolingStrategy()= default;
-    virtual BreachType inferBreach(double value) const = 0;
+public:
+    virtual ~CoolingStrategy() = default;
+    virtual BreachType inferBreach(double temperature) const = 0;
 };
 
 class PassiveCooling : public CoolingStrategy
 {
-    public:
-    BreachType inferBreach(double value) const override;
+public:
+    BreachType inferBreach(double temperature) const override;
 };
 
 class HiActiveCooling : public CoolingStrategy
 {
-    public:
-    BreachType inferBreach(double value) const override;
+public:
+    BreachType inferBreach(double temperature) const override;
 };
 
 class MedActiveCooling : public CoolingStrategy
 {
-    public:
-    BreachType inferBreach(double value) const override;
+public:
+    BreachType inferBreach(double temperature) const override;
 };
 
 class CoolingContext 
 {
-  private:
-  std::unique_ptr<CoolingStrategy> strategy;
+private:
+    std::unique_ptr<CoolingStrategy> coolingStrategy;
   
-  public:
-  CoolingContext(std::unique_ptr<CoolingStrategy> strategy);
-  BreachType inferBreach(double value) const;  
+public:
+    CoolingContext(std::unique_ptr<CoolingStrategy> strategy);
+    BreachType inferBreach(double temperature) const;  
 };
 
 class AlertStrategy 
@@ -55,6 +55,7 @@ class EmailAlert : public AlertStrategy
 {
 public:
     void report(const BreachType breachType) override;
+    
 private:
     const std::map<const BreachType, std::string> breachMessages =
     {
@@ -65,9 +66,10 @@ private:
 
 class Alerter
 {
-  private:
-      std::unique_ptr<AlertStrategy> strategy;
-  public:
-      Alerter(std::unique_ptr<AlertStrategy> strategy);
-      void report(const BreachType breachType);
+private:
+    std::unique_ptr<AlertStrategy> alertStrategy;
+
+public:
+    Alerter(std::unique_ptr<AlertStrategy> strategy);
+    void report(const BreachType breachType);
 };
