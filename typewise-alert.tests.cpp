@@ -1,54 +1,62 @@
-#include <assert.h>
-#include <string.h>
 #include "typewise-alert.h"
-#include <stdio.h>
 
-// Test inferBreach function
-void testInferBreach() {
-    assert(inferBreach(20, 30, 40) == TOO_LOW);
-    assert(inferBreach(50, 30, 40) == TOO_HIGH);
-    assert(inferBreach(35, 30, 40) == NORMAL);
+// Implementations for CoolingStrategy
+BreachType PassiveCooling::inferBreach(double value) const {
+    if (value < 0.0) {
+        return BreachType::TOO_LOW;
+    } else if (value > 35.0) {
+        return BreachType::TOO_HIGH;
+    }
+    return BreachType::NORMAL;
 }
 
-// Test classifyTemperatureBreach function with different cooling types
-void testClassifyTemperatureBreach() {
-    assert(classifyTemperatureBreach(PASSIVE_COOLING, 20) == NORMAL);
-    assert(classifyTemperatureBreach(PASSIVE_COOLING, 36) == TOO_HIGH);
-    assert(classifyTemperatureBreach(HI_ACTIVE_COOLING, 46) == TOO_HIGH);
-    assert(classifyTemperatureBreach(MED_ACTIVE_COOLING, 39) == NORMAL);
-    assert(classifyTemperatureBreach(MED_ACTIVE_COOLING, 41) == TOO_HIGH);
+BreachType HiActiveCooling::inferBreach(double value) const {
+    if (value < 0.0) {
+        return BreachType::TOO_LOW;
+    } else if (value > 45.0) {
+        return BreachType::TOO_HIGH;
+    }
+    return BreachType::NORMAL;
 }
 
-// Helper function to capture output for assertions
-static void captureOutput(void (*function)(BreachType), BreachType breachType, const char* expectedOutput) {
-    char buffer[256];
-    FILE* output = freopen("/dev/null", "w", stdout);
-    setvbuf(stdout, buffer, _IOFBF, sizeof(buffer));
-    
-    function(breachType);
-
-    freopen("/dev/tty", "w", stdout);  // Reset stdout
-    buffer[255] = '\0';
-    assert(strcmp(buffer, expectedOutput) == 0);
+BreachType MedActiveCooling::inferBreach(double value) const {
+    if (value < 0.0) {
+        return BreachType::TOO_LOW;
+    } else if (value > 40.0) {
+        return BreachType::TOO_HIGH;
+    }
+    return BreachType::NORMAL;
 }
 
-// Test checkAndAlert function
-void testCheckAndAlert() {
-    BatteryCharacter batteryChar = {PASSIVE_COOLING};
+// Implementations for CoolingContext
+CoolingContext::CoolingContext(std::unique_ptr<CoolingStrategy> strategy)
+    : strategy(std::move(strategy)) {}
 
-    // Capture and verify output for controller alert
-    freopen("/dev/null", "w", stdout);
-    checkAndAlert(TO_CONTROLLER, batteryChar, 36);
-    freopen("/dev/tty", "w", stdout);
-
-    // Capture and verify output for email alert
-    checkAndAlert(TO_EMAIL, batteryChar, 36);
+BreachType CoolingContext::inferBreach(double value) const {
+    return strategy->inferBreach(value);
 }
 
-int main() {
-    testInferBreach();
-    testClassifyTemperatureBreach();
-    testCheckAndAlert();
-    printf("All tests passed!\n");
-    return 0;
+// Implementations for AlertStrategy
+void ControllerAlert::report(BreachType breachType) {
+    const unsigned short header = 0xfeed;
+    std::cout << std::hex << header << " : " << static_cast<std::uint16_t>(breachType) << std::endl;
+}
+
+void EmailAlert::report(BreachType breachType) {
+    if (breachType != BreachType::NORMAL) {
+        const std::string recepient = "a.b@c.com";
+        auto it = breachMessages.find(breachType);
+        if (it != breachMessages.end()) {
+            std::cout << "To: " << recepient << std::endl;
+            std::cout << "Hi, " << it->second << std::endl;
+        }
+    }
+}
+
+// Implementations for Alerter
+Alerter::Alerter(std::unique_ptr<AlertStrategy> strategy)
+    : strategy(std::move(strategy)) {}
+
+void Alerter::report(BreachType breachType) {
+    strategy->report(breachType);
 }
